@@ -16,7 +16,8 @@ export async function validarUsuario(req, res, next) {
       message: "Se necesita una token para realizar la solicitud",
     });
   }
-  const token = req.headers.authorization.split(" ")[1];
+  // const token = req.headers.authorization.split(" ")[1];
+  const token = process.env.TOKEN;
   const resultado = verificarToken(token);
   if (resultado instanceof jwt.JsonWebTokenError) {
     return res.status(403).json({
