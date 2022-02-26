@@ -17,7 +17,6 @@ export async function validarUsuario(req, res, next) {
     });
   }
   const token = req.headers.authorization.split(" ")[1];
-  // const token = process.env.TOKEN;
   const resultado = verificarToken(token);
   if (resultado instanceof jwt.JsonWebTokenError) {
     return res.status(403).json({
