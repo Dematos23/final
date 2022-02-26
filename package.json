@@ -1,0 +1,31 @@
+{
+  "name": "delion_backend",
+  "version": "1.0.0",
+  "description": "backend para programa Delion",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js",
+    "dev": "dotenv -e .env -- nodemon src/server.js"
+  },
+  "author": "Diego Matos",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^3.8.1",
+    "aws-sdk": "^2.1080.0",
+    "bcrypt": "^5.0.1",
+    "express": "^4.17.2",
+    "jsonwebtoken": "^8.5.1",
+    "morgan": "^1.10.0",
+    "prisma": "^3.8.1",
+    "validator": "^13.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15",
+    "dotenv-cli": "^4.1.1"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  }
+}

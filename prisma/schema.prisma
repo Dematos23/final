@@ -1,0 +1,427 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tareas {
+  id            Int          @id @unique @default(autoincrement())
+  createdAt     DateTime     @default(now()) @map(name: "created_at")
+  updatedAt     DateTime     @updatedAt @map(name: "updated_at")
+  //
+  tarea         String
+  categoria     Categorias
+  estado        Estados
+  deadline      DateTime
+  //
+  creadorId     Int          @map(name: "creador_id")
+  responsableId Int          @map(name: "responsable_id")
+  supervisorId  Int          @map(name: "supervisor_id")
+  expedienteId  Int?         @map(name: "expediente_id")
+  //
+  creador       Usuarios     @relation("creador", fields: [creadorId], references: [id])
+  responsable   Usuarios     @relation("responsable", fields: [responsableId], references: [id])
+  supervisor    Usuarios     @relation("supervisor", fields: [supervisorId], references: [id])
+  expediente    Expedientes? @relation(fields: [expedienteId], references: [id])
+  archivos      Archivos[]
+
+  @@map(name: "tareas")
+}
+
+model Usuarios {
+  id          Int               @id @unique @default(autoincrement())
+  createdAt   DateTime          @default(now()) @map(name: "created_at")
+  updatedAt   DateTime          @updatedAt @map(name: "updated_at")
+  //
+  nombre      String
+  apellido    String
+  email       String            @unique
+  password    String
+  //
+  tipoUsuario tiposUsuarios     @map("tipo_usuario")
+  //
+  modulos     ModulosUsuarios[]
+  creador     Tareas[]          @relation("creador")
+  responsable Tareas[]          @relation("responsable")
+  supervisor  Tareas[]          @relation("supervisor")
+  depositario Inventario[]
+
+  @@map(name: "usuarios")
+}
+
+model Modulos {
+  id       Int               @id @unique @default(autoincrement())
+  nombre   String            @unique
+  //
+  usuarios ModulosUsuarios[]
+
+  @@map("modulos")
+}
+
+model ModulosUsuarios {
+  assignedAt DateTime @default(now())
+  assignedBy String
+  //
+  usuarioId  Int      @map("usuario_id")
+  moduloId   Int      @map("modulo_id")
+  //
+  usuario    Usuarios @relation(fields: [usuarioId], references: [id])
+  modulo     Modulos  @relation(fields: [moduloId], references: [id])
+
+  @@id([usuarioId, moduloId])
+  @@map("modulos_usuarios")
+}
+
+model Archivos {
+  id        Int      @id @unique @default(autoincrement())
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  url       String   @unique
+  tareasId  Int?
+  Tareas    Tareas?  @relation(fields: [tareasId], references: [id])
+}
+
+model Expedientes {
+  id                Int          @id @unique @default(autoincrement())
+  createdAt         DateTime     @default(now()) @map(name: "created_at")
+  updatedAt         DateTime     @updatedAt @map(name: "updated_at")
+  //
+  numeroExpediente  Int          @unique @map("numero_expediente")
+  anoExpediente     DateTime     @map("ano_expediente")
+  fechaPresentacion DateTime     @map("fecha_presentacion")
+  numeroResolucion  Int          @unique @map("numero_resolucion")
+  anoResolucion     Int          @map("ano_resolucion")
+  //
+  agenteId          Int          @unique @map("agente_id")
+  titularId         Int          @unique @map("titular_id")
+  marcaId           Int          @unique @map("marca_id")
+  tipoServicio      TipoServicio @map("tipo_servicio")
+  ParteContraria    String       @map("parte_contraria")
+  //
+  titular           Titulares    @relation(fields: [titularId], references: [id])
+  agente            Agentes      @relation(fields: [agenteId], references: [id])
+  marca             Marcas       @relation(fields: [marcaId], references: [id])
+  tareas            Tareas[]
+  inventario        Inventario[]
+
+  @@map("expedientes")
+}
+
+model Agentes {
+  id          Int           @id @unique @default(autoincrement())
+  pais        Paises
+  nombre      String        @unique
+  direccion   String?
+  //
+  agente      Titulares[]
+  Expedientes Expedientes[]
+
+  @@map("agentes")
+}
+
+model Titulares {
+  id          Int           @id @unique @default(autoincrement())
+  pais        Paises
+  nombre      String        @unique
+  direccion   String?
+  agenteId    Int           @unique @map("agente_id")
+  //
+  agente      Agentes       @relation(fields: [agenteId], references: [id])
+  Expedientes Expedientes[]
+
+  @@map("titulares")
+}
+
+model Marcas {
+  id           Int           @id @unique @default(autoincrement())
+  denominacion String?
+  logo         String?
+  clase        String[]
+  Expedientes  Expedientes[]
+
+  @@map("marcas")
+}
+
+model Inventario {
+  id           Int                     @id @unique @default(autoincrement())
+  createdAt    DateTime                @default(now()) @map(name: "created_at")
+  updatedAt    DateTime                @updatedAt @map(name: "updated_at")
+  //
+  bultos       Int
+  unidades     Int
+  estado       EstadosInventario
+  descripcion  String
+  //
+  movimientos  MovimientosInventario[]
+  //
+  Usuarios     Usuarios?               @relation(fields: [usuariosId], references: [id])
+  usuariosId   Int?
+  Expedientes  Expedientes?            @relation(fields: [expedienteId], references: [id])
+  expedienteId Int?                    @map("expediente_id")
+
+  @@map("inventario")
+}
+
+model MovimientosInventario {
+  id            Int                      @id @unique @default(autoincrement())
+  createdAt     DateTime                 @default(now()) @map(name: "created_at")
+  //
+  fecha         DateTime
+  tipo          TipoMovimientoInventario
+  bultos        Int
+  unidades      Int
+  observaciones String
+  //
+  Inventario    Inventario?              @relation(fields: [inventarioId], references: [id])
+  inventarioId  Int?                     @map("invetario_id")
+
+  @@map("movimientos_inventario")
+}
+
+enum tiposUsuarios {
+  SUPERADMIN
+  ADMIN
+  SUPERVISOR
+  USUARIO
+}
+
+enum Categorias {
+  CLIENTE
+  PAGOS
+  RRHH
+  ALMACEN
+  COBRANZA
+}
+
+enum Prioridades {
+  ALTA
+  MEDIA
+  BAJA
+}
+
+enum Estados {
+  COMPLETO
+  EN_PROCESO
+  EN_REVISION
+  DETENIDO
+}
+
+enum Paises {
+  ANGOLA
+  ARGELIA
+  BENIN
+  BOTSUANA
+  BURKINA_FASO
+  BURUNDI
+  CABO_VERDE
+  CAMERUN
+  CHAD
+  COMORAS
+  COSTA_DE_MARFIL
+  EGIPTO
+  ERITREA
+  ETIOPIA
+  GABON
+  GAMBIA
+  GHANA
+  GUINEA
+  GUINEA_ECUATORIAL
+  GUINEA_BISSAU
+  KENIA
+  LESOTO
+  LIBERIA
+  LIBIA
+  MADAGASCAR
+  MALAUI
+  MALI
+  MARRUECOS
+  MAURICIO
+  MAURITANIA
+  MOZAMBIQUE
+  NAMIBIA
+  NIGER
+  NIGERIA
+  REPUBLICA_CENTROAFRICANA
+  REPUBLICA_DEL_CONGO
+  REPUBLICA_DEMOCRATICA_DEL_CONGO
+  RUANDA
+  SANTO_TOME_Y_PRINCIPE
+  SENEGAL
+  SEYCHELLES
+  SIERRA_LEONA
+  SOMALIA
+  SUAZILANDIA
+  SUDAFRICA
+  SUDAN
+  SUDAN_DEL_SUR
+  TANZANIA
+  TOGO
+  TUNEZ
+  UGANDA
+  YIBUTI
+  ZAMBIA
+  ZIMBABUE
+  ANTIGUA_Y_BARBUDA
+  ARGENTINA
+  BAHAMAS
+  BARBADOS
+  BELICE
+  BOLIVIA
+  BRASIL
+  CANADA
+  CHILE
+  COLOMBIA
+  COSTA_RICA
+  CUBA
+  DOMINICA
+  ECUADOR
+  EL_SALVADOR
+  ESTADOS_UNIDOS
+  GRANADA
+  GUATEMALA
+  GUYANA
+  HAITI
+  HONDURAS
+  JAMAICA
+  MEXICO
+  NICARAGUA
+  PANAMA
+  PARAGUAY
+  PERU
+  PUERTO_RICO
+  REPUBLICA_DOMINICANA
+  SAN_CRISTOBAL_Y_NIEVES
+  SAN_VICENTE_Y_LAS_GRANADINAS
+  SANTA_LUCIA
+  SURINAM
+  TRINIDAD_Y_TOBAGO
+  URUGUAY
+  VENEZUELA
+  AFGANISTAN
+  ARABIA_SAUDITA
+  BANGLADES
+  BAREIN
+  BRUNEI
+  BUTAN
+  CAMBOYA
+  CATAR
+  CHINA
+  CHIPRE
+  COREA_DEL_NORTE
+  COREA_DEL_SUR
+  EMIRATOS_ARABES_UNIDOS
+  FILIPINAS
+  INDIA
+  INDONESIA
+  IRAN
+  IRAQ
+  ISRAEL
+  JAPON
+  JORDANIA
+  KAZAJISTAN
+  KIRGUISTAN
+  KUWAIT
+  LAOS
+  LIBANO
+  MALASIA
+  MALDIVAS
+  MONGOLIA
+  MYANMAR_BIRMANIA
+  NEPAL
+  OMAN
+  PAKISTAN
+  PALESTINA
+  SIRIA
+  SRI_LANKA
+  TAILANDIA
+  TAYIKISTAN
+  TIMOR_ORIENTAL
+  TURKMENISTAN
+  TURQUIA
+  UZBEKISTAN
+  VIETNAM
+  YEMEN
+  ALBANIA
+  ALEMANIA
+  ANDORRA
+  ARMENIA
+  AUSTRIA
+  AZERBAIYAN
+  BELGICA
+  BIELORRUSIA
+  BOSNIA_Y_HERZEGOVINA
+  BULGARIA
+  CROACIA
+  DINAMARCA
+  ESLOVAQUIA
+  ESLOVENIA
+  ESPANA
+  ESTONIA
+  FINLANDIA
+  FRANCIA
+  GEORGIA
+  GRECIA
+  HUNGRIA
+  IRLANDA
+  ISLANDIA
+  ITALIA
+  LETONIA
+  LIECHTENSTEIN
+  LITUANIA
+  LUXEMBURGO
+  MALTA
+  MOLDAVIA
+  MONACO
+  MONTENEGRO
+  NORUEGA
+  PAISES_BAJOS
+  POLONIA
+  PORTUGAL
+  REINO_UNIDO
+  REPUBLICA_CHECA
+  REPUBLICA_DE_MACEDONIA
+  RUMANIA
+  RUSIA
+  SAN_MARINO
+  SERBIA
+  SUECIA
+  SUIZA
+  UCRANIA
+  AUSTRALIA
+  FIYI
+  ISLAS_MARSHALL
+  ISLAS_SALOMON
+  KIRIBATI
+  MICRONESIA
+  NAURU
+  NUEVA_ZELANDA
+  PALAOS
+  PAPUA_NUEVA_GUINEA
+  SAMOA
+  TONGA
+  TUVALU
+  VANUATU
+}
+
+enum TipoServicio {
+  REGISTRO
+  RENOVACION
+  ACTO_MODIFICATORIO
+  OPOSICION
+  CANCELACION
+  ANUALIDAD
+}
+
+enum EstadosInventario {
+  OK
+  INCOMPLETO
+  DANADO
+  DESTRUIDO
+}
+
+enum TipoMovimientoInventario {
+  INGRESO
+  SALIDA
+}
